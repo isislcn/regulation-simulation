@@ -23,3 +23,4 @@ Then visit `http://127.0.0.1:4173/index.html`.
 ## Scope
 
 This is an educational planning simulation, not legal advice. Regulatory status and the included mock BOM are illustrative. Re-check live FCC, DoD, Congress, and federal-register sources before relying on a result.
+
