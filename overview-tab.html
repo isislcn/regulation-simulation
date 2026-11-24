@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Regulation Sim Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..800&display=swap" rel="stylesheet">
+<style>
+/* VOICE work: a counsel's briefing tab inside a simulation, dense and exact
+   IDEA a Swiss railway timetable crossed with a docket sheet: hard rules, hanging dates, status marks
+   PICTURE live decision-weight board: ten decisions as ruled bars that re-rank when evidence changes
+   COLOUR white ground, black ink, signal red for the decisions that must be made now, one grey
+   TYPE Archivo expanded 800 for titles and numerals, Archivo for text
+   LAYOUT laptop: title and bottom line across, then scenario controls left / weight board right; phone: title, board, controls */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0e0e0e);--ink:light-dark(#0b0b0b,#f2f2f2);--grey:light-dark(#6b6b6b,#9a9a9a);--rule:light-dark(#0b0b0b,#f2f2f2);--hair:light-dark(#d9d9d9,#2c2c2c);--red:light-dark(#e4002b,#ff3b55);--panel:light-dark(#f4f4f4,#171717)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:64px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Archivo,system-ui,sans-serif;overflow-x:clip}
+a{color:inherit}
+.wrap{max-width:1240px;margin:0 auto;padding:0 max(5vw,16px)}
+.tabs{display:flex;gap:0;border-bottom:3px solid var(--rule);overflow-x:auto}
+.tabs span{flex:none;padding:12px 16px;font-weight:600;color:var(--grey);white-space:nowrap}
+.tabs span.on{color:var(--ink);box-shadow:inset 0 -5px 0 var(--red)}
+.note{font-size:13px;color:var(--grey)}
+.disc{border:1px solid var(--rule);padding:8px 12px;font-size:14px;margin:16px 0 0}
+h1{font-stretch:112%;font-weight:800;font-size:clamp(32px,4.6vw,50px);line-height:1.05;letter-spacing:-.02em;margin:22px 0 10px;text-wrap:balance}
+h2{font-stretch:112%;font-weight:800;font-size:clamp(24px,2.8vw,32px);line-height:1.1;letter-spacing:-.015em;margin:0 0 6px;text-wrap:balance}
+h3{font-size:18px;margin:0 0 4px}
+.lede{font-size:18px;max-width:68ch;margin:0 0 18px}
+.band{padding:clamp(28px,4vw,56px) 0;border-top:3px solid var(--rule)}
+.sub{max-width:70ch;margin:0 0 20px;color:var(--grey)}
+.toc{display:flex;gap:8px;overflow-x:auto;padding:10px 0;border-top:1px solid var(--hair)}
+.toc a{flex:none;text-decoration:none;font-size:14px;padding:8px 12px;border:1px solid var(--hair)}
+.toc a:hover,.toc a:focus-visible{border-color:var(--ink)}
+@media(min-width:900px){.tocwrap{position:sticky;top:0;background:var(--bg);z-index:5}}
+.first{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:28px;padding:20px 0 36px}
+@media(max-width:820px){.first{grid-template-columns:minmax(0,1fr)}.ctrl{order:2}}
+.ctrl{background:var(--panel);padding:16px;align-self:start}
+.ctrl h3{font-size:16px}
+.ctrl label{display:block;font-size:14px;font-weight:600;margin:14px 0 4px}
+select{width:100%;font:16px Archivo,sans-serif;padding:10px;min-height:44px;border:1px solid var(--ink);background:var(--bg);color:var(--ink)}
+select:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.tog{display:flex;gap:8px;align-items:center;margin-top:14px;font-size:14px;font-weight:600}
+.tog input{width:22px;height:22px;accent-color:var(--red)}
+button{font:600 15px Archivo,sans-serif;min-height:44px;padding:8px 14px;border:1px solid var(--ink);background:var(--bg);color:var(--ink);cursor:pointer;margin-top:14px}
+button:hover{background:var(--ink);color:var(--bg)}
+.board-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:3px solid var(--rule);padding-bottom:6px}
+.board-h b{font-stretch:112%;font-size:20px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px}
+.legend i{display:inline-block;width:14px;height:10px;margin-right:5px;vertical-align:middle}
+.row{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) 3.2em;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.row:hover .nm,.row:focus-visible .nm{text-decoration:underline}
+.nm{font-weight:600;font-size:15px;line-height:1.25}
+.nm small{display:block;font-weight:400;color:var(--grey);font-size:13px}
+.trk{height:16px;background:var(--panel);position:relative}
+.bar{height:100%;transition:width .5s ease}
+.t-now{background:var(--red)}.t-plan{background:var(--ink)}.t-watch{background:var(--grey);opacity:.55}
+.val{font-stretch:112%;font-weight:800;font-size:20px;text-align:right;font-variant-numeric:tabular-nums}
+.nr{display:inline-block;font-size:12px;font-weight:600;border:1px solid currentColor;padding:0 5px;margin-left:6px;vertical-align:1px}
+@media(max-width:520px){.row{grid-template-columns:minmax(0,1fr) 3em}.trk{grid-column:1/-1;grid-row:2}}
+.detail{border:3px solid var(--rule);padding:16px;margin-top:16px}
+.detail .g{display:grid;grid-template-columns:repeat(auto-fit,minmax(14em,1fr));gap:12px 24px;margin-top:10px;font-size:15px}
+.detail dt{font-size:13px;color:var(--grey);font-weight:600}
+.detail dd{margin:0 0 6px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th{text-align:left;font-size:13px;color:var(--grey);font-weight:600;border-bottom:3px solid var(--rule);padding:8px 10px 6px 0;vertical-align:bottom}
+td{border-bottom:1px solid var(--hair);padding:10px 10px 10px 0;vertical-align:top}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ev{display:inline-block;font-size:12px;font-weight:700;padding:1px 6px;white-space:nowrap}
+.ev.E{background:var(--ink);color:var(--bg)}
+.ev.A{border:2px solid var(--ink)}
+.ev.P{border:2px dashed var(--ink)}
+.ev.R{border:2px dotted var(--ink)}
+.ev.N{border:1px solid var(--grey);color:var(--grey)}
+.tl{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr);border-top:1px solid var(--hair)}
+.tl>div{padding:10px 0;border-bottom:1px solid var(--hair)}
+.tl .d{font-stretch:112%;font-weight:800;font-size:18px;white-space:nowrap;padding-right:12px}
+.tl .d.f{color:var(--grey)}
+.tl .today{border-bottom:3px solid var(--red)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(18em,1fr));gap:0 32px}
+.el{border-top:1px solid var(--rule);padding:12px 0 16px}
+.el p{margin:4px 0}
+.el .where{font-size:14px;color:var(--grey)}
+.q{border-top:1px solid var(--hair);padding:12px 0}
+.q p{margin:4px 0}
+.moves{font-size:14px;color:var(--grey)}
+dl.gl{display:grid;grid-template-columns:minmax(0,13em) minmax(0,1fr);gap:0}
+dl.gl dt,dl.gl dd{margin:0;padding:8px 0;border-bottom:1px solid var(--hair)}
+dl.gl dt{font-weight:700;padding-right:12px}
+.src li{margin:4px 0;overflow-wrap:anywhere}
+.formula{font-stretch:112%;font-weight:700;font-size:clamp(17px,2vw,21px);border-left:5px solid var(--red);padding:8px 14px;background:var(--panel);margin:12px 0}
+@media(max-width:600px){table{font-size:13px}th,td{padding:6px 6px 6px 0}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--hair)}.stack td{display:flex;justify-content:space-between;gap:12px;border:0;padding:3px 0;text-align:right}.stack td::before{content:attr(data-l);font-weight:600;color:var(--grey);text-align:left;flex:none;max-width:40%}.tl{grid-template-columns:minmax(0,1fr)}.tl .d{border-bottom:0;padding-bottom:0}dl.gl{grid-template-columns:minmax(0,1fr)}dl.gl dt{border:0;padding-bottom:0}}
+@media(prefers-reduced-motion:reduce){.bar{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="tabs" aria-label="Simulation tabs">
+    <span class="on">Overview</span><span>Simulation</span><span>Inject library</span><span>BOM import</span><span>Decision memo</span>
+  </nav>
+
+  <p class="disc">Educational simulation for compliance, legal and design teams. Not legal advice. Status as of November 23, 2026. Before relying on any item, check it against the live FCC Covered List and the official texts.</p>
+
+  <h1>Proposed Regulation Simulation: what is law, what is signaled, and which decisions carry the most weight</h1>
+  <p class="lede">The component rule and the category bans for routers and inverters are already law. The Chinese optical transceiver curb exists only as press and analyst reporting. The decisions that matter most now are the ones that are hard to reverse: how to zone federal tenants, when to adopt the next optics generation, and how to source power equipment. Use the controls to see how the ranking moves as the evidence changes.</p>
+
+  <section class="first" id="weights" aria-label="Decision weights">
+    <div class="ctrl">
+      <h3>Evidence scenario</h3>
+      <p class="note" style="margin:0">Each setting changes the probability of the instruments that drive the decisions.</p>
+      <label for="s-curb">FCC transceiver curb</label>
+      <select id="s-curb">
+        <option value="0.2">Analyst chatter only</option>
+        <option value="0.4" selected>Reported by Reuters (today)</option>
+        <option value="0.7">Draft text or NSD published</option>
+        <option value="1">Adopted / Covered List entry</option>
+        <option value="0">Shelved</option>
+      </select>
+      <label for="s-type">How a curb would be written</label>
+      <select id="s-type">
+        <option value="loc" selected>By production location (category)</option>
+        <option value="prod">By named producer (entity listing)</option>
+      </select>
+      <label for="s-bill">S.5548 (federal NSS procurement)</label>
+      <select id="s-bill">
+        <option value="0.35" selected>Introduced (today)</option>
+        <option value="0.5">Reported by committee</option>
+        <option value="0.8">Folded into an NDAA</option>
+        <option value="1">Enacted</option>
+      </select>
+      <label for="s-fn">FCC 26-50 FNPRM (firmware, HBOM/SBOM)</label>
+      <select id="s-fn">
+        <option value="0.6" selected>Proposed (today)</option>
+        <option value="1">Adopted</option>
+        <option value="0">Withdrawn</option>
+      </select>
+      <div class="tog"><input type="checkbox" id="s-fed" checked><label for="s-fed" style="margin:0">Site serves federal / DoD / NSS tenants</label></div>
+      <button type="button" id="reset">Reset to today</button>
+    </div>
+    <div>
+      <div class="board-h"><b>Decision weight, 0 to 100</b>
+        <div class="legend"><span><i class="t-now"></i>Decide now (60+)</span><span><i class="t-plan"></i>Plan this quarter (40–59)</span><span><i class="t-watch"></i>Monitor (&lt;40)</span></div>
+      </div>
+      <div id="board" role="list"></div>
+      <div class="detail" id="detail" aria-live="polite"></div>
+      <p class="note">Weight = probability that the drivers bind × stakes (impact and lock-in). "No-regret" marks a step worth taking whatever the weight. Select a row to see its drivers and the moves that reduce it. Method: <a href="#method">How the weights work</a>.</p>
+    </div>
+  </section>
+</div>
+
+<div class="tocwrap"><div class="wrap"><nav class="toc" aria-label="Sections">
+  <a href="#instruments">Instruments</a><a href="#timeline">Timeline</a><a href="#elements">Critical elements</a><a href="#decisions">Decision register</a><a href="#method">Weighting method</a><a href="#counsel">Questions for counsel</a><a href="#glossary">Glossary</a><a href="#sources">Sources</a>
+</nav></div></div>
+
+<div class="wrap">
+<section class="band" id="instruments">
+  <h2>Seven instruments. Four bind today, and none of them restricts Chinese transceivers in commercial sites</h2>
+  <p class="sub">Each row is one inject in the simulation. The evidence mark tells you how far to trust it: a solid mark means enacted, a box means adopted, a dashed box means proposed, and a dotted box means reported.</p>
+  <div class="scroll"><table class="stack" id="instTable"><thead><tr><th>Instrument</th><th>Status</th><th>Who is bound</th><th>What triggers it</th><th>What it does not reach</th><th>Key date</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section class="band" id="timeline">
+  <h2>The calendar: most hard dates land between mid-2027 and early 2028</h2>
+  <p class="sub">The red rule marks today. Grey dates are estimates or depend on an event that hasn't happened yet.</p>
+  <div class="tl" id="tl"></div>
+</section>
+
+<section class="band" id="elements">
+  <h2>Ten elements of the simulation that decide the outcome</h2>
+  <p class="sub">These are the facts the rule engine reads for every part. Each one is also a question counsel would ask in diligence. A wrong value moves a part from clear to blocked.</p>
+  <div class="cols" id="els"></div>
+</section>
+
+<section class="band" id="decisions">
+  <h2>Decision register: owner, timing and the evidence that would change each call</h2>
+  <p class="sub">Weights update with the scenario controls at the top of the page.</p>
+  <div class="scroll"><table class="stack" id="decTable"><thead><tr><th>Decision</th><th>Owner</th><th>Weight</th><th>Act by</th><th>What would change it</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section class="band" id="method">
+  <h2>How the weights work: probability, impact and lock-in</h2>
+  <div class="formula">Weight = 100 × P(drivers bind) × (0.6 × Impact + 0.4 × Lock-in) ÷ 5</div>
+  <div class="cols">
+    <div class="el"><h3>Probability</h3><p>Each decision has drivers: the instruments that would force it. Each driver has a probability set by its evidence level and a relevance between 0 and 1 for that decision. The drivers combine as independent risks: P = 1 − Π(1 − p × r).</p></div>
+    <div class="el"><h3>Impact (1–5)</h3><p>The cost, schedule or legal exposure if the decision is wrong when the driver binds. A 5 means a fabric generation or a federal contract is at stake. A 1 means a single replaceable device.</p></div>
+    <div class="el"><h3>Lock-in (1–5)</h3><p>How hard the decision is to undo. Physical zoning and the optics architecture score 5. Contract clauses and records programs score 1. When a decision has low lock-in but high probability, it is marked no-regret.</p></div>
+  </div>
+  <div class="scroll" style="margin-top:12px"><table><thead><tr><th>Evidence level</th><th>Default probability</th><th>Used for</th></tr></thead><tbody>
+    <tr><td><span class="ev E">Enacted</span></td><td class="num">1.00</td><td>Statutes in force, effective FCC rules, Covered List entries, 1260H listings</td></tr>
+    <tr><td><span class="ev A">Adopted</span></td><td class="num">0.90</td><td>Adopted but not yet effective, or awaiting implementing regulations</td></tr>
+    <tr><td><span class="ev P">Proposed: agency</span></td><td class="num">0.60</td><td>NPRM / FNPRM text on the record</td></tr>
+    <tr><td><span class="ev P">Proposed: bill</span></td><td class="num">0.35</td><td>Introduced bills; most never pass on their own, but they can ride an NDAA</td></tr>
+    <tr><td><span class="ev R">Reported</span></td><td class="num">0.40</td><td>Credible press with named outlets, no official text</td></tr>
+    <tr><td><span class="ev N">Analyst</span></td><td class="num">0.20</td><td>Sell-side readouts, unnamed policy chatter</td></tr>
+  </tbody></table></div>
+  <p class="note">These are teaching defaults, not forecasts. Counsel should replace them with their own view and record why. The simulation caps every non-enacted driver at amber in the part view, so a reported rule is never shown as law.</p>
+</section>
+
+<section class="band" id="counsel">
+  <h2>Open questions for counsel, ranked by how far the answer moves the weights</h2>
+  <p class="sub">Students working in Sayari should bring evidence on questions 3, 4 and 6. Those three are the ones a parts-level analysis can answer.</p>
+  <div id="qs"></div>
+</section>
+
+<section class="band" id="glossary">
+  <h2>Glossary</h2>
+  <dl class="gl" id="gl"></dl>
+</section>
+
+<section class="band" id="sources">
+  <h2>Sources</h2>
+  <div class="cols">
+    <div><h3>Primary</h3><ul class="src">
+      <li><a href="https://docs.fcc.gov/public/attachments/FCC-26-50A1.pdf">FCC 26-50, Third Report & Order and Third FNPRM</a></li>
+      <li><a href="https://public-inspection.federalregister.gov/2026-18535.pdf">Federal Register final rule, effective Oct 13, 2026</a></li>
+      <li><a href="https://public-inspection.federalregister.gov/2026-16197.pdf">Federal Register Third FNPRM</a></li>
+      <li><a href="https://www.fcc.gov/supplychain/coveredlist">FCC Covered List (live) and Conditional Approvals</a></li>
+      <li><a href="https://docs.fcc.gov/public/attachments/DA-26-278A1.pdf">DA 26-278, foreign-produced routers</a></li>
+      <li><a href="https://docs.fcc.gov/public/attachments/DA-26-786A1.pdf">DA 26-786, power inverters and robots</a> and <a href="https://docs.fcc.gov/public/attachments/DA-26-870A1.pdf">DA 26-870 modification</a></li>
+      <li><a href="https://docs.fcc.gov/public/attachments/DA-26-635A1.pdf">DA 26-635, import/marketing ban on previously authorized covered equipment</a></li>
+      <li><a href="https://docs.fcc.gov/public/attachments/DA-26-390A1.txt">DA 26-390</a>, <a href="https://docs.fcc.gov/public/attachments/DA-26-768A1.pdf">DA 26-768</a>, <a href="https://docs.fcc.gov/public/attachments/DA-26-957A1.pdf">DA 26-957</a>: router Conditional Approval terms</li>
+      <li><a href="https://public-inspection.federalregister.gov/2026-11571.pdf">DoD Section 1260H list notice, June 10, 2026</a></li>
+      <li><a href="https://www.businessdefense.gov/805-waiver-request.html">DoW Section 805 guidance</a></li>
+      <li><a href="https://www.federalregister.gov/documents/2026/02/17/2026-03065/federal-acquisition-regulation-prohibition-on-certain-semiconductor-products-and-services">FAR proposed rule, Section 5949 semiconductors</a></li>
+      <li><a href="https://www.mccormick.senate.gov/news/press-releases/senators-mccormick-gallego-cornyn-fetterman-introduce-bill-to-keep-chinese-transceivers-out-of-u-s-national-security-systems/">S.5548 sponsors' release</a> (bill text on congress.gov)</li>
+    </ul></div>
+    <div><h3>Reported and analysis</h3><ul class="src">
+      <li><a href="https://www.govinfosecurity.com/us-fcc-weighs-chinese-transceiver-supply-chain-crackdown-a-32584">GovInfoSecurity: no FCC draft text, proceeding or threat determination on transceivers</a></li>
+      <li><a href="https://jpozo.substack.com/p/pozos-photonics-intelligence-briefing-047">Summary of Reuters Nov 17, 2026: administration pressing ahead</a></li>
+      <li><a href="https://roctelecom.com/insights/fcc-optical-module-rules-update/">3.2T phase-in and 65% US-content readout</a></li>
+      <li><a href="https://404kresearch.substack.com/p/china-optical-communications-deep">Overseas capacity by vendor and why a factory abroad is not an exemption</a></li>
+      <li><a href="https://www.squirepattonboggs.com/insights/publications/fcc-logic-bearing-hardware-component-rules-take-effect/">Squire Patton Boggs on logic-bearing components</a></li>
+      <li><a href="https://www.arnoldporter.com/en/perspectives/blogs/enforcement-edge/2026/09/fccs-next-move-on-supply-chain-security">Arnold & Porter on the FNPRM and production-location approach</a></li>
+      <li><a href="https://www.dlapiper.com/en-ca/insights/publications/2026/07/fcc-adds-foreign-made-power-inverters-and-advanced-robotics">DLA Piper on inverter Conditional Approvals</a></li>
+      <li><a href="https://federalnewsnetwork.com/defense-main/2026/07/dod-issues-guidance-as-ban-on-chinese-companies-takes-effect/">Federal News Network on Section 805 phases</a></li>
+      <li><a href="https://trendforce.com/news/2026/08/06/news-inp-shortage-emerges-as-ai-optical-interconnect-bottleneck/">TrendForce on indium phosphide supply</a></li>
+    </ul></div>
+  </div>
+</section>
+</div>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const EV={E:'Enacted',A:'Adopted',P:'Proposed',R:'Reported',N:'Analyst'};
+const ev=k=>`<span class="ev ${k}">${EV[k]}</span>`;
+
+const INST=[
+ {n:'FCC 26-50 component rule (47 CFR 2.902–2.903)',e:'E',who:'Applicants for new FCC equipment authorization: manufacturers, importers, white-label brands, TCBs',trig:'A device contains a logic-bearing hardware component produced by a Covered List entity (including subsidiaries and affiliates), and the device would be barred if that entity had made it. "Produced by" is judged on the totality of the circumstances.',not:'Previously authorized equipment. Pending applications, unless amended to change a logic-bearing part. Purely mechanical or fixed non-programmable parts. Firmware. It applies only to producer-based entries, not to production-location categories such as routers, inverters or drones.',d:'Effective Oct 13, 2026'},
+ {n:'FCC 26-50 Third FNPRM',e:'P',who:'Same, if adopted',trig:'Would split the Covered List into producer-based and production-location-based categories, add white-label rules and HBOM/SBOM disclosure, and possibly extend the ban to software/firmware or to any component from a foreign-adversary-controlled producer',not:'Nothing yet. It is a proposal.',d:'Open proceeding'},
+ {n:'Reported FCC curb on new Chinese optical transceiver models',e:'R',who:'Would bind applicants for new transceiver authorizations. Installed and previously authorized models are reportedly untouched.',trig:'Reported: phase-in from the 3.2T generation, with a possible exemption at 65% or more US-sourced BOM value',not:'As of this week there is no draft text, no named proceeding and no published threat determination. InnoLight, Eoptolink, Dongshan Precision and TFC are not on the Covered List.',d:'Reuters, Nov 17, 2026: pressing ahead'},
+ {n:'S.5548, Securing NSS from Chinese Optical Transceivers Act',e:'P',who:'Executive agencies procuring for national security systems, and by flow-down their contractors',trig:'Covered transceivers from InnoLight and Eoptolink and affiliates, with authority to name more. Extends the Section 5949 semiconductor model.',not:'Commercial data centers that don\'t sell into NSS. Five-year transition, with waivers available.',d:'Introduced Sep 24, 2026'},
+ {n:'Section 1260H list + FY24 NDAA Section 805',e:'E',who:'DoD contracting, and contractors through DFARS',trig:'Zhongji InnoLight was listed June 8, 2026. The direct ban on DoD contracts with listed entities and the entities they control started June 30, 2026. The indirect ban, which reaches goods produced by listed entities through other contractors, starts June 30, 2027.',not:'Civil agencies and commercial buyers. Some services that connect to third-party facilities.',d:'Jun 30, 2026 and Jun 30, 2027'},
+ {n:'FY23 NDAA Section 5949 (semiconductors)',e:'A',who:'Executive agencies, and contractors through certification',trig:'Electronic products that contain covered Chinese semiconductors (SMIC, YMTC, CXMT and others)',not:'Equipment acquired before the effective date, including its spares, per the proposed FAR rule. Contractors may reasonably rely on supplier certifications.',d:'Effective Dec 23, 2027'},
+ {n:'Category Covered List entries: consumer-grade routers and power inverters',e:'E',who:'Applicants for new authorizations of foreign-produced devices in those categories',trig:'Production abroad (Buy American "domestic end product" test for inverters), unless DoW or DHS grants a Conditional Approval that is tied to an onshoring plan with quarterly updates',not:'Previously authorized models. US-produced routers that contain foreign parts. Enterprise and datacenter routers, which the router entry doesn\'t name.',d:'Mar 23 and Jul 28, 2026'}
+];
+
+const TL=[
+ ['Feb 2025','China puts indium phosphide, the laser substrate inside most transceivers, under export licensing. Supply is a counter-risk to any US curb.','E'],
+ ['Mar 23, 2026','Foreign-produced consumer-grade routers added to the Covered List. Conditional Approvals last up to 18 months.','E'],
+ ['Jun 8, 2026','Zhongji InnoLight added to the DoD Section 1260H list.','E'],
+ ['Jun 26, 2026','FCC bans continued import and marketing of previously authorized covered gear listed in 2024 or earlier. Grandfathering can be withdrawn.','E'],
+ ['Jun 30, 2026','Section 805 direct ban on DoD contracting with 1260H entities takes effect.','E'],
+ ['Jul 28, 2026','Foreign-produced power inverters added to the Covered List.','E'],
+ ['Sep 24, 2026','S.5548 introduced in the Senate.','P'],
+ ['Oct 13, 2026','FCC 26-50 component rule takes effect for new authorizations.','E'],
+ ['Nov 17, 2026','Reuters: administration pressing ahead with curbs on new Chinese transceiver models despite hyperscaler lobbying.','R'],
+ ['Mar 1, 2027','Online marketplaces must start displaying FCC IDs.','E'],
+ ['Jun 30, 2027','Section 805 indirect ban takes effect.','E'],
+ ['Oct 31, 2027','First router Conditional Approvals expire (eero, Nokia, Calix). Others run to Mar 6, 2028.','E'],
+ ['Dec 23, 2027','Section 5949 semiconductor procurement ban takes effect.','A'],
+ ['Jan 1, 2028','Deadline for inverter Conditional Approval applications, per counsel summaries of the guidance.','E'],
+ ['2028–2029','3.2T optics ramp. Reported start of the transceiver curb.','R',1],
+ ['Enactment + 5 yrs','S.5548 restrictions would apply.','P',1]
+];
+
+const ELS=[
+ ['Evidence level','The gap between a Reuters exclusive and a Federal Register rule is the gap between planning and compliance. Every inject carries one, and the part view caps non-enacted rules at amber.','Inject library: evidence badge'],
+ ['Legal hook','Equipment authorization (FCC), procurement (NDAA, FAR, DFARS) and import or marketing each bind a different party in a different way. Ask whether the rule stops you from buying, them from selling, or the government from accepting.','Inject: instrument, applies_to'],
+ ['Producer-based vs. location-based listing','The component rule reaches only producer-based entries. If a transceiver curb were written as a producer listing, it could cascade to switches with embedded optics (CPO). If written by location, a Thai plant might matter.','Scenario control: how a curb would be written'],
+ ['Who actually produced it','White label, ODM and contract manufacturing are judged on the totality of the circumstances. The brand on the box doesn\'t decide it.','BOM: manufacturer, ultimate_parent (Sayari)'],
+ ['Logic-bearing sub-components','The management SoC, the DSP, the BMC and the battery management controller all count. A Western switch is only as clean as its parts.','BOM: sub_components'],
+ ['Authorization date and grandfathering','New-authorization rules spare models that already hold an FCC ID. But the FCC has withdrawn import and marketing rights for older covered gear before, so grandfathering is protection, not a guarantee.','BOM: fcc_id, fcc_auth_date'],
+ ['Tenant and customer type','Federal NSS and DoD work puts S.5548, Section 805 and Section 5949 in play. Commercial-only halls are largely outside them.','Design: zone federal_nss flag'],
+ ['US-content share and how it is measured','The reported 65% test could mean BOM value from US companies, or a Buy American component-cost and US-manufacture test. The two give different answers for the same module.','BOM: us_bom_value_pct, dsp_vendor, laser_vendor'],
+ ['Conditional Approval terms','Approvals expire (routers) or depend on an onshoring plan (inverters), and they end if the applicant misstates facts. A supplier\'s approval is your dependency.','BOM: conditional_approval_expiry'],
+ ['Runway','The days between an effective date and your order date for each phase. Under a year turns a design choice into a sourcing scramble.','Timeline and part table: runway days']
+];
+
+const DEC=[
+ {id:'fed',n:'Federal / NSS tenant segregation',s:'Separate halls or fabrics on a vetted supply chain',o:'Legal + Design',I:4,L:5,dr:[['Section 805 indirect ban',()=>1,.8,1],['Section 5949 analog',()=>1,.5,1],['S.5548',()=>V.bill,1,1]],by:'Before Jun 30, 2027 (Section 805 indirect ban)',chg:'S.5548 folded into an NDAA, or a site with no federal tenants',mv:'Map NSS workloads, zone them physically, and require Section 805 and 5949 certifications from suppliers to those zones'},
+ {id:'gen',n:'Optics generation timing',s:'How long to stay on 1.6T, and when to qualify 3.2T',o:'Design + Procurement',I:5,L:5,dr:[['Transceiver curb',()=>V.curb,1,0],['InP export licensing',()=>1,.3,0]],by:'Before Phase 2 orders (about 2028)',chg:'Draft FCC text naming 3.2T, or the curb being shelved',mv:'Qualify two non-Chinese 3.2T sources in parallel, and keep the 1.6T fabric extensible'},
+ {id:'arch',n:'Architecture shift: LPO, CPO or copper',s:'Fewer or different optics in the fabric',o:'Design',I:4,L:5,dr:[['Transceiver curb',()=>V.curb,.8,0],['InP export licensing',()=>1,.3,0],['Producer-listing cascade to CPO hosts',()=>V.type==='prod'?Math.max(V.curb,.2):.05,1,0]],by:'Next fabric design review',chg:'Curb written as a named-producer listing, which makes CPO from a listed maker a host-device problem',mv:'Copper or AEC in-rack, LPO where the reach allows, and CPO only from a switch vendor with a clean optics chain'},
+ {id:'sup',n:'Transceiver supplier mix',s:'Share of Chinese vs. US and allied modules',o:'Procurement',I:5,L:3,dr:[['Transceiver curb',()=>V.curb,1,0],['S.5548',()=>V.bill,.6,1],['1260H / Section 805',()=>1,.3,1]],by:'Next supply agreement renewal',chg:'Adoption of the curb or of S.5548; Western capacity coming online',mv:'Dual-source every high-volume SKU, write volume flex into contracts, and track Coherent and Lumentum capacity'},
+ {id:'pow',n:'Power chain sourcing: inverters, BESS, UPS',s:'Domestic or Conditionally Approved equipment',o:'Procurement + Engineering',I:3,L:4,dr:[['Inverter Covered List entry',()=>1,.8,0]],by:'Before power refresh; vendor applications due Jan 1, 2028',chg:'The vendor receives or loses a Conditional Approval',mv:'Ask each vendor about its Conditional Approval status and onshoring plan, and plan a second source'},
+ {id:'k',n:'Contract terms and flow-downs',s:'Reps, change-in-law, HBOM delivery, notice, certifications',o:'Legal',I:4,L:1,nr:1,dr:[['Component rule',()=>1,.5,0],['Transceiver curb',()=>V.curb,.7,0],['S.5548 / 5949 certifications',()=>Math.max(V.bill,1*.6),.6,1]],by:'Now, in every new supply agreement',chg:'Rarely. This step is worth taking whichever way the evidence moves.',mv:'Require origin and producer representations, sub-component disclosure, a duty to notify of listings, and termination or substitution rights'},
+ {id:'aud',n:'Inside-the-box audit of switches and servers',s:'Logic-bearing sub-component provenance',o:'Compliance',I:3,L:2,dr:[['Component rule',()=>1,.7,0],['FNPRM extension',()=>V.fn,.5,0]],by:'Before any new model or hardware revision',chg:'FNPRM adopted with firmware or any-component scope',mv:'Get an HBOM from each OEM for every new SKU, and screen producers and parents in Sayari'},
+ {id:'hb',n:'HBOM / SBOM evidence program',s:'Records that make exemptions and certifications defensible',o:'Compliance',I:3,L:1,nr:1,dr:[['FNPRM disclosure',()=>V.fn,1,0],['65% exemption proof',()=>V.curb,.8,0],['Conditional Approval filings',()=>1,.5,0]],by:'Now',chg:'FNPRM withdrawn and curb shelved',mv:'Keep per-part FCC IDs, production sites, parent entities and BOM value shares in one register'},
+ {id:'ltb',n:'Lock authorized SKUs / last-time buy',s:'Buy forward before new-model rules bite',o:'Procurement',I:4,L:3,dr:[['Transceiver curb',()=>V.curb,1,0],['Grandfather withdrawal precedent',()=>1,.2,0]],by:'Before the curb\'s effective date',chg:'Signs the FCC would also bar import of previously authorized transceivers',mv:'Stage buys rather than one bulk purchase, and price in carrying cost and the risk that grandfathering is withdrawn'},
+ {id:'mg',n:'Management plane: OOB routers, BMCs, consoles',s:'Small devices that carry logic',o:'Engineering',I:2,L:1,dr:[['Router category entry',()=>1,.3,0],['Router approval expiries',()=>1,.4,0],['Component rule',()=>1,.3,0]],by:'Oct 31, 2027 (first approval expiries)',chg:'Router entry extended beyond consumer grade',mv:'Inventory OOB gear, prefer enterprise or US-produced units, and track approval end dates'},
+ {id:'eng',n:'Regulatory engagement',s:'FNPRM comments, coalition positions',o:'Legal',I:2,L:1,dr:[['FNPRM',()=>V.fn,1,0]],by:'Comment windows as noticed',chg:'Proceeding closes',mv:'File or join comments on the scope of the HBOM rules and on the 65% measurement method'}
+];
+
+const QS=[
+ ['1. Would a transceiver curb be a producer listing or a production-location category?','It decides whether Thai output by InnoLight or Eoptolink helps, and whether the component rule could cascade to host switches with co-packaged optics.','Moves: architecture shift, supplier mix, optics generation'],
+ ['2. Do our pluggable transceiver SKUs each hold their own FCC authorization, and by which route (certification or SDoC)?','A curb on new authorizations bites only where each module needs its own grant. The FNPRM also asks about requiring certification in Covered List sectors.','Moves: last-time buy, optics generation'],
+ ['3. Who produced each module and its DSP and laser, and who ultimately controls them?','The totality-of-circumstances test and the 1260H "controlled by" language reach parents and affiliates. This is Sayari work.','Moves: audit, supplier mix, federal segregation'],
+ ['4. How would the 65% US-content share be measured?','BOM value from US companies and a Buy American component-cost test can give opposite answers for the same module. Get the costed BOMs.','Moves: supplier mix, HBOM program'],
+ ['5. Are we a contractor providing an NSS, or a commercial host for tenants who are?','That decides whether S.5548, Section 805 flow-downs and Section 5949 certifications reach us, or only our customers.','Moves: federal segregation, contract terms'],
+ ['6. Which of our suppliers rely on Conditional Approvals, and when do they end?','Approvals that expire, or that are revoked for misstatements, return the device to the Covered List.','Moves: power chain, management plane'],
+ ['7. How durable is grandfathering for previously authorized optics?','The June 2026 order ending import and marketing of older covered gear shows the FCC will reach the installed base when the national security finding supports it.','Moves: last-time buy, SKU lock'],
+ ['8. What do our contracts say about change in law, substitution and delay?','A rule that hits mid-build shifts cost between owner, integrator and vendor according to the clauses already signed.','Moves: contract terms']
+];
+
+const GL=[
+ ['Covered List','The FCC list of equipment and services found to pose unacceptable national security risk. Listed gear can\'t get new FCC equipment authorization. Named producers include their subsidiaries and affiliates.'],
+ ['Equipment authorization','FCC approval needed before most electronic devices are imported, marketed or sold in the US. It is granted by certification through a TCB, or by a supplier\'s declaration of conformity (SDoC).'],
+ ['Logic-bearing hardware component','A part that processes data or can be programmed: chips, modules, sub-assemblies. Fixed, non-digital, non-programmable parts are excluded.'],
+ ['Producer-based vs. location-based entry','A producer-based entry names companies (Huawei, Hikvision). A location-based entry names a product category made abroad (routers, inverters, drones).'],
+ ['Conditional Approval','A DoW or DHS determination that exempts specific foreign-produced devices from a category entry. It is tied to an onshoring plan and may expire.'],
+ ['Section 1260H list','DoD\'s annual list of Chinese military companies. Section 805 of the FY24 NDAA turns it into procurement bans.'],
+ ['National security system (NSS)','A federal information system used for intelligence, cryptologic, military command or weapons functions, or protected as classified. This is S.5548\'s scope.'],
+ ['HBOM / SBOM','Hardware and software bills of materials: the records that show what is inside a device.'],
+ ['3.2T, 1.6T, 800G','Transceiver data rates. 3.2T is the next generation, ramping in about 2028–29.'],
+ ['LPO / CPO','Linear-drive pluggable optics (no DSP) and co-packaged optics (optics mounted with the switch chip). Both change how many modules a fabric needs and who makes them.'],
+ ['Grandfathering','Models authorized before a rule takes effect keep their authorization. The FCC can still bar their further import and marketing in a separate action.']
+];
+
+const V={};
+const read=()=>{V.curb=+$('#s-curb').value;V.type=$('#s-type').value;V.bill=+$('#s-bill').value;V.fn=+$('#s-fn').value;V.fed=$('#s-fed').checked};
+const calc=d=>{let q=1;const parts=d.dr.map(([nm,pf,r,fed])=>{const p=pf();const rr=fed&&!V.fed?r*.1:r;q*=1-p*rr;return {nm,p,r:rr}});const P=1-q;const w=Math.round(100*P*(0.6*d.I+0.4*d.L)/5);return {P,w,parts}};
+const tier=w=>w>=60?'now':w>=40?'plan':'watch';
+const TN={now:'Decide now',plan:'Plan this quarter',watch:'Monitor'};
+let sel='fed';
+
+const render=()=>{
+  read();
+  const rows=DEC.map(d=>({d,...calc(d)})).sort((a,b)=>b.w-a.w);
+  $('#board').innerHTML=rows.map(({d,w})=>`<div class="row" role="listitem" tabindex="0" data-id="${d.id}" aria-label="${esc(d.n)}, weight ${w}"><div class="nm">${esc(d.n)}${d.nr?'<span class="nr">No-regret</span>':''}<small>${esc(d.s)}</small></div><div class="trk"><div class="bar t-${tier(w)}" style="width:${w}%"></div></div><div class="val">${w}</div></div>`).join('');
+  const r=rows.find(x=>x.d.id===sel)||rows[0];
+  $('#detail').innerHTML=`<h3>${esc(r.d.n)}: ${r.w} · ${TN[tier(r.w)]}</h3><div class="g"><div><dt>Drivers (probability × relevance)</dt><dd>${r.parts.map(p=>`${esc(p.nm)}: <span style="white-space:nowrap">${p.p.toFixed(2)} × ${p.r.toFixed(2)}</span>`).join('<br>')}</dd></div><div><dt>Combined probability</dt><dd>${r.P.toFixed(2)}</dd><dt>Impact / lock-in</dt><dd>${r.d.I} / ${r.d.L}</dd></div><div><dt>Owner</dt><dd>${esc(r.d.o)}</dd><dt>Act by</dt><dd>${esc(r.d.by)}</dd></div><div><dt>Moves that reduce it</dt><dd>${esc(r.d.mv)}</dd></div></div>`;
+  $('#decTable tbody').innerHTML=rows.map(({d,w})=>`<tr><td data-l="Decision"><b>${esc(d.n)}</b>${d.nr?'<span class="nr">No-regret</span>':''}</td><td data-l="Owner">${esc(d.o)}</td><td data-l="Weight" class="num"><b>${w}</b> · ${TN[tier(w)]}</td><td data-l="Act by">${esc(d.by)}</td><td data-l="What would change it">${esc(d.chg)}</td></tr>`).join('');
+};
+
+$('#instTable tbody').innerHTML=INST.map(i=>`<tr><td data-l="Instrument"><b>${esc(i.n)}</b></td><td data-l="Status">${ev(i.e)}</td><td data-l="Who is bound">${esc(i.who)}</td><td data-l="Trigger">${esc(i.trig)}</td><td data-l="Not reached">${esc(i.not)}</td><td data-l="Key date">${esc(i.d)}</td></tr>`).join('');
+$('#tl').innerHTML=TL.map(([d,t,e,f],ix)=>{const today=d==='Nov 17, 2026';return `<div class="d${f?' f':''}${today?' today':''}">${esc(d)}</div><div${today?' class="today"':''}>${ev(e)} ${esc(t)}</div>`}).join('');
+$('#els').innerHTML=ELS.map(([h,p,w],i)=>`<div class="el"><h3>${i+1}. ${esc(h)}</h3><p>${esc(p)}</p><p class="where">In the sim: ${esc(w)}</p></div>`).join('');
+$('#qs').innerHTML=QS.map(([h,p,m])=>`<div class="q"><h3>${esc(h)}</h3><p>${esc(p)}</p><p class="moves">${esc(m)}</p></div>`).join('');
+$('#gl').innerHTML=GL.map(([t,d])=>`<dt>${esc(t)}</dt><dd>${esc(d)}</dd>`).join('');
+
+['#s-curb','#s-type','#s-bill','#s-fn','#s-fed'].forEach(id=>$(id).addEventListener('change',render));
+$('#reset').addEventListener('click',()=>{$('#s-curb').value='0.4';$('#s-type').value='loc';$('#s-bill').value='0.35';$('#s-fn').value='0.6';$('#s-fed').checked=true;render()});
+$('#board').addEventListener('click',e=>{const r=e.target.closest('.row');if(r){sel=r.dataset.id;render()}});
+$('#board').addEventListener('keydown',e=>{const r=e.target.closest('.row');if(r&&(e.key==='Enter'||e.key===' ')){e.preventDefault();sel=r.dataset.id;render();const n=document.querySelector(`.row[data-id="${sel}"]`);if(n)n.focus()}});
+render();
+}
+</script>
+</body>
+</html>
